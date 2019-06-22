@@ -2,8 +2,6 @@
 let g:vwm_left_panel = 0
 let g:vwm_bottom_panel = 0
 
-let g:vwm_left_width = get(g:, 'vwm_left_width', 35)
-let g:vwm_bottom_height = get(g:, 'vwm_bottom_height', 10)
 let g:vwm_left_buffer = 0
 let g:vwm_bottom_buffer = 0
 
@@ -16,8 +14,13 @@ let g:vwm_left_filetype = {
     \ 'vista_kind': 'Symbols', 'vista': 'Symbols',
     \ 'rg_term': 'Search',
 \ }
-
 let g:vwm_bottom_filetype = {}
+
+let s:lambda_mapsize = {v,fullsize->type(v)==v:t_float ? float2nr(fullsize * v): v}
+let s:lambda_mapsizes = {l,fullsize->map(copy(l), {i,v->s:lambda_mapsize(v, fullsize)})}
+
+let g:vwm_left_width = get(g:, 'vwm_left_width', s:lambda_mapsize(g:vwm_left_size[0], &columns))
+let g:vwm_bottom_height = get(g:, 'vwm_bottom_height', s:lambda_mapsize(g:vwm_bottom_size[0], &lines))
 
 fun! vwm#init()
     augroup VWM
@@ -550,10 +553,6 @@ fun! vwm#auto_split()
     exe a:0 ? (vert ? 'vert ' : '') . a:1 : (vert ? 'winc v': 'winc s')
 endf
 
-fun! s:map_sizes(sizelist, fullsize)
-    return map(copy(a:sizelist), {i,v->type(v)==v:t_float ? float2nr(a:fullsize * v): v})
-endf
-
 " 获取两个并排的普通窗口
 " return [cur_winid, left_winid, right_wid]
 fun! vwm#get_norm_win()
@@ -571,12 +570,12 @@ fun! vwm#get_norm_win()
 endf
 
 fun! s:change_size(inc, sizes, cursize, cmd, loop, height)
-    let sizes = a:inc ? a:sizes: reverse(a:sizes)
+    let sizes = a:inc ? a:sizes : reverse(a:sizes)
     let cursize = a:cursize
 
     for i in range(0, len(sizes) - 1)
         let size = sizes[i]
-        if (a:inc ? cursize < size: cursize > size)
+        if (a:inc ? cursize < size : cursize > size)
             exec a:cmd size
             " 高度没有变化，说明已到极限了
             if (a:height ? winheight(0): winwidth(0)) == cursize
@@ -595,14 +594,14 @@ fun! vwm#add_size(...)
     let inc = a:0 ? a:1 : 1
 
     if wid == g:vwm_bottom_panel || &bt == 'help'
-        call s:change_size(inc, s:map_sizes(g:vwm_bottom_size, &lines), winheight(0), 'resize', 1, 1)
+        call s:change_size(inc, s:lambda_mapsizes(g:vwm_bottom_size, &lines), winheight(0), 'resize', 1, 1)
     elseif wid == g:vwm_left_panel
-        call s:change_size(inc, s:map_sizes(g:vwm_left_size, &columns), winwidth(0), 'vertical resize', 1, 0)
+        call s:change_size(inc, s:lambda_mapsizes(g:vwm_left_size, &columns), winwidth(0), 'vertical resize', 1, 0)
     else
         let [wid, lid, rid] = vwm#get_norm_win()
         " echom wid lid rid
         if lid && rid
-            let another_width = winwidth(wid == lid ? rid: lid)
+            let another_width = winwidth(wid == lid ? rid : lid)
             let current_width = winwidth(wid)
             " echom current_width another_width
             if abs(current_width - another_width) > 1
