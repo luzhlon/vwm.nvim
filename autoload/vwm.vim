@@ -2,19 +2,18 @@
 let g:vwm_left_panel = 0
 let g:vwm_bottom_panel = 0
 
-let g:vwm_left_buffer = 0
-let g:vwm_bottom_buffer = 0
+let g:vwm_left_buffer = -1
+let g:vwm_bottom_buffer = -1
 
 let g:vwm_left_size = get(g:, 'vwm_left_size', [42, 0.3, 0.7, 1.0])
 let g:vwm_bottom_size = get(g:, 'vwm_bottom_size', [0.2, 0.5, 1.0])
 
-let g:vwm_left_filetype = {
-    \ 'ctrlsf': 'Search',
-    \ 'defx': 'Defx',
-    \ 'vista_kind': 'Symbols', 'vista': 'Symbols',
-    \ 'rg_term': 'Search',
-\ }
-let g:vwm_bottom_filetype = {}
+let g:vwm_left_filetype = extend({
+        \ 'nerdtree': 'File', 'defx': 'Defx', 'ctrlsf': 'Search',
+        \ 'vista_kind': 'Symbols', 'vista': 'Symbols',
+        \ 'vwm_symbol_': 'Symbols',
+    \}, get(g:, 'vwm_left_filetype', {}))
+let g:vwm_bottom_filetype = extend({}, get(g:, 'vwm_bottom_filetype', {}))
 
 let s:lambda_mapsize = {v,fullsize->type(v)==v:t_float ? float2nr(fullsize * v): v}
 let s:lambda_mapsizes = {l,fullsize->map(copy(l), {i,v->s:lambda_mapsize(v, fullsize)})}
@@ -98,12 +97,20 @@ fun! vwm#toggle_quickfix()
     endif
 endf
 
-fun! vwm#toggle_symbol()
-    if get(g:vwm_left_filetype, &ft, '') == 'Symbols'
-        close
-    else
+fun! vwm#toggle_symbol(...)
+    let open = 1
+    if a:0
+        let open = a:1
+    elseif get(g:vwm_left_filetype, &ft, '') == 'Symbols'
+        let open = 0
+    endif
+
+    if open
+        call vwm#open_left_panel()
         call vwm#goto_normal_window()
         exec 'Vista'
+    else
+        close
     endif
 endf
 
@@ -336,11 +343,15 @@ fun! vwm#make_bottom()
 endf
 
 fun! vwm#open_left_panel()
-    if !win_gotoid(g:vwm_left_panel)
-        exec 'vertical' 'topleft' g:vwm_left_width . 'split'
-        call vwm#make_left()
+    if bufexists(g:vwm_left_buffer)
+        if !win_gotoid(g:vwm_left_panel)
+            exec 'vertical' 'topleft' g:vwm_left_width . 'split'
+            call vwm#make_left()
+        endif
+        sil! noau exec g:vwm_left_buffer 'b'
+    else
+        exec 'Defx -split=vertical -direction=topleft'
     endif
-    sil! noau exec g:vwm_left_buffer 'b'
 endf
 
 fun! vwm#close_left_panel()
