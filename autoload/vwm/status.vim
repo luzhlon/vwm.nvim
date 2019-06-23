@@ -1,20 +1,15 @@
 
-" let g:vwm_status = {
-"     \ 'filename': {'text': ' %t ', 'highlight': ['StatusFile', 'StatusFileNC']},
-"     \ 'modified': {'text': " %{&modified ? '✘': '' }", 'highlight': ['StatusWarn', 'StatusWarnNC']},
-"     \ 'separator': {'text': '%=', 'highlight': ['StatusLine', 'StatusLineNC']},
-"     \ 'bufnr': {'text': ' ▤ %n ', 'highlight': 'StatusBufNr'},
-" \ }  ☰
-
 let g:vwm_statusline = get(g:, 'vwm_statusline', [
-    \ "%#StatusWarnNC#%{&modified ? ' ✘': ''}",
-    \ {'text': " %{expand('%')}", 'highlight': ['StatusFile', 'StatusFileNC']},
-    \ '%#Status3#  %{vwm#status#ff()}',
-    \ '%#StatusFuncNC#  %{vwm#status#func()} ',
+    \ {'text': ' %{vwm#status#ff()}', 'highlight': ['Status3', 'StatusLineNC']},
+    \ {'text': " %{expand('%:.')}", 'highlight': ['StatusFile', 'StatusFileNC']},
+    \ {'text': "%{&modified ? '  ✘': ''}", 'highlight': ['StatusModified', 'StatusLineNC']},
+    \ {'text': '  %{vwm#status#func()}', 'highlight': ['StatusFunc', 'StatusLineNC']},
     \ '%#StatuslineNC#%r%h%w%=',
-    \ '%#StatusBufNr# #%n',
-    \ '%#StatusFileType#  %{vwm#status#ft()}  %#Status3#%{vwm#status#fenc()}',
-    \ '%#StatusPercent#  %p%%  %#Status2# %l:%-v ',
+    \ ' %#StatusBufNr##%n',
+    \ {'text': '  %{vwm#status#ft()}', 'highlight': ['StatusFileType', 'StatusLineNC']},
+    \ {'text': '  %{vwm#status#fenc()}', 'highlight': ['Status3', 'StatusLineNC']},
+    \ {'text': '  %p%%', 'highlight': ['StatusPercent', 'StatusLineNC']},
+    \ {'text': '  %l:%-v ', 'highlight': ['StatusLineNr', 'StatusLineNC']},
 \ ])
 
 fun! vwm#status#toggle()
@@ -173,8 +168,6 @@ fun! vwm#status#update()
             call setwinvar(wnr, '&statusline', StatusConfig)
         endif
     endfor
-    " let t = join(s:build_statusline(g:vwm_rulerline, winnr()), '')
-    " let &rulerformat = printf('%%%d(%s%%)', 50, t)
 endf
 
 fun! s:build_statusline(l, wnr)
@@ -227,7 +220,7 @@ fun! vwm#status#ff()
 endf
 
 fun! vwm#status#fenc()
-    return empty(&fenc) ? '' : ' ' . &fenc
+    return ' ' . &fenc
 endf
 
 fun! vwm#status#left()
@@ -235,6 +228,8 @@ fun! vwm#status#left()
         \ {'text': '▓▒░', 'highlight': 'Status2'},
         \ {'text': join(s:to_status([], get(g:, 'vwm_left_bufs', []), g:curbuf), '')},
         \ {'text': '', 'highlight': 'StatusLineNC'},
+        \ '%#StatuslineNC#%=',
+        \ '%#StatusBufNr##%n',
     \ ]
 endf
 
@@ -279,8 +274,6 @@ fun! HiCopy(dest, from)
     sil! exec 'hi' a:dest t
 endf
 
-" let sel_bg_g = '#8ac6f2'
-" let sel_fg_g = '#444444'
 fun! vwm#status#hilight()
     hi! default link TabLineSel StatusLine
     hi! default link TabLineFill StatusLineNC
@@ -292,6 +285,8 @@ fun! vwm#status#hilight()
     hi! default link StatusItem StatusLineNC
     hi! default link StatusItemSel StatusFile
 
+    hi! default link StatusFileNC StatusLineNC
+
     sil! hi StatusCur guifg=#3a3a3a guibg=#febf48
     sil! hi Status1 guifg=#c2bfbc guibg=#606060
     sil! hi Status2 guifg=#c2bfbc guibg=#4e4e4e
@@ -300,9 +295,6 @@ fun! vwm#status#hilight()
     let nr = hlID('CursorLineNr')
     let nr_fg_g = synIDattr(nr, 'fg', 'gui')
     let nr_fg_c = synIDattr(nr, 'fg', 'cterm')
-
-    " call HiCopy('TabLineSel', 'TabLineItem')
-    " exec 'hi' 'TabLineSel' 'guifg=' . '#afd700'
 
     call HiCopy('TabLineWarn', 'TabLineItem')
     exec 'hi' 'TabLineWarn' 'guifg='.'red' 'ctermfg='.'red'
@@ -313,23 +305,21 @@ fun! vwm#status#hilight()
     call HiCopy('TabLineSelWarn', 'TabLineSel')
     exec 'hi' 'TabLineSelWarn' 'guifg='.'red' 'ctermfg='.'red'
 
-    call HiCopy('StatusFunc', 'StatusLine')
-    call HiCopy('StatusFuncNC', 'StatusLineNC')
+    call HiCopy('StatusFunc', 'StatusLineNC')
     exec 'hi' 'StatusFunc' 'guifg='.'#d7875f'
-    exec 'hi' 'StatusFuncNC' 'guifg='.'#d7875f'
 
-    call HiCopy('StatusWarn', 'StatusLine')
-    call HiCopy('StatusWarnNC', 'StatusLineNC')
-    exec 'hi' 'StatusWarn' 'guifg=red'
-    exec 'hi' 'StatusWarnNC' 'guifg=red'
+    call HiCopy('StatusModified', 'StatusLineNC')
+    exec 'hi' 'StatusModified' 'guifg=red'
 
-    call HiCopy('StatusFileNC', 'StatusLineNC')
     call HiCopy('StatusFile', 'StatusLineNC')
     " exec 'hi' 'StatusFile' 'gui=underline' 'guifg=#afd700'
     exec 'hi' 'StatusFile' 'guifg=yellow'
 
     call HiCopy('StatusPercent', 'StatusLineNC')
-    exec 'hi' 'StatusPercent' 'guifg=#ff5faf'
+    exec 'hi' 'StatusPercent' 'guifg=#af87d7'
+
+    call HiCopy('StatusLineNr', 'StatusLineNC')
+    exec 'hi' 'StatusLineNr' 'guifg=#ff5faf'
 
     call HiCopy('StatusFileType', 'StatusLineNC')
     exec 'hi' 'StatusFileType' 'guifg=#5fafd7'
@@ -374,7 +364,7 @@ fun! vwm#status#bottom()
     try
         let git_state = gina#component#repo#branch()
         if len(git_state)
-            let git_state = '  ' . git_state . ' '
+            let git_state = '   ' . git_state
         endif
     catch
     endt
@@ -388,10 +378,11 @@ fun! vwm#status#bottom()
         \ {'text': '█▓▒░', 'highlight': 'Status2'},
         \ {'text': join(s:to_status([], get(g:, 'vwm_bottom_bufs', []), g:curbuf), '')},
         \ {'text': '%=', 'highlight': 'StatusLineNC'},
-        \ {'text': coc_status, 'highlight': 'Status2'},
+        \ '%#StatusBufNr##%n',
+        \ {'text': coc_status, 'highlight': 'Status3'},
         \ {'text': git_state, 'highlight': 'Status1'},
-        \ '%#StatusBufNr# ☰ %n',
-        \ '%#StatusPercent#  %p%%  %#Status2# %l:%-v ',
+        \ {'text': '  %p%%', 'highlight': ['StatusPercent', 'StatusLineNC']},
+        \ {'text': '  %l:%-v ', 'highlight': ['StatusLineNr', 'StatusLineNC']},
     \ ]
 endf
 
@@ -499,5 +490,3 @@ fun! s:to_tabline(nrs)
     let l += s:get_tabs()
     return join(l, '')
 endf
-
-" \ '▁▂▃▄▅▆▇█',
