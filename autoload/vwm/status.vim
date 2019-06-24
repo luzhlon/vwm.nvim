@@ -207,12 +207,48 @@ fun! vwm#status#func()
     return len(result) ? ' ' . result : result
 endf
 
-let s:ft_icon = {'python': '', 'lua': '', 'vim': '', 'json': '', 'markdown': '',
-            \ 'cpp': '', 'conf': '', }
+let g:vwm_default_icon = get(g:, 'vwm_default_icon', '')
+let g:vwm_ft_icon = extend({
+    \ 'html': '',
+    \ 'css': '',
+    \ 'less': '',
+    \ 'markdown': '',
+    \ 'json': '',
+    \ 'javascript': '',
+    \ 'jsx': '',
+    \ 'php': '',
+    \ 'python': '',
+    \ 'coffee': '',
+    \ 'conf': '',
+    \ 'dosini': '',
+    \ 'gitconfig': '',
+    \ 'yaml': '',
+    \ 'dosbatch': '',
+    \ 'cpp': '',
+    \ 'c': '',
+    \ 'lua': '',
+    \ 'java': '',
+    \ 'sh': '',
+    \ 'fish': '',
+    \ 'bash': '',
+    \ 'zsh': '',
+    \ 'awk': '',
+    \ 'ps1': '',
+    \ 'sql': '',
+    \ 'dump': '',
+    \ 'scala': '',
+    \ 'go': '',
+    \ 'dart': '',
+    \ 'rust': '',
+    \ 'vim': '',
+    \ 'typescript': '',
+\ }, get(g:, 'vwm_ft_icon',{}))
+
 "     
 fun! vwm#status#ft()
     let ft = &ft
-    return has_key(s:ft_icon, ft) ? s:ft_icon[ft] . ' ' . ft : ft
+    return empty(g:vwm_default_icon) ? ft :
+        \ get(g:vwm_ft_icon, ft, g:vwm_default_icon) . ' ' . ft
 endf
 
 fun! vwm#status#ff()
