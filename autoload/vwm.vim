@@ -26,10 +26,13 @@ fun! vwm#init()
         au WinEnter * call vwm#check_layout()
         " au WinLeave * call vwm#check_term_exit()
         au BufWinEnter,BufWinLeave,WinEnter,WinLeave * call vwm#update_panel_info()
+        au BufWinEnter *    call vwm#check_panel('BufWinEnter')
+        au BufEnter *       call vwm#check_panel('BufEnter')
+        au FileType *       call vwm#check_panel('FileType')
         if has('nvim')
-            au FileType,BufWinEnter,TermOpen * call vwm#check_panel()
+            au TermOpen * call vwm#check_panel()
         else
-            au FileType,BufWinEnter,TerminalOpen * call vwm#check_panel()
+            au TerminalOpen * call vwm#check_panel()
         endif
     augroup END
 
@@ -241,17 +244,18 @@ fun! s:current_belong_bottom()
 endf
 
 " 将属于面板内的buf移到面板内，不属于的移出
-fun! vwm#check_panel()
+fun! vwm#check_panel(...)
     let bnr = bufnr('%')
     let wnr = winnr()
     let wid = win_getid()
+    let event = a:0 ? a:1 : ''
 
     if wid == g:vwm_left_panel
-        " 不属于左侧边栏所容纳的buffer类型
-        if !has_key(g:vwm_left_filetype, &ft)
+        " 误入侧边栏
+        if !has_key(g:vwm_left_filetype, &ft) && (event == 'BufWinEnter' || event == 'BufEnter')
             let bnr = bufnr('%')
+            exec bufnr('#') > 0 ? 'b#' : ''
             call timer_start(0, {t->[
-                \ bufnr('#') > 0 ? execute('b#'): 0,
                 \ vwm#goto_normal_window(),
                 \ execute(bnr . 'b'),
             \ ]})
