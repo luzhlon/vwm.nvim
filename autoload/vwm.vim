@@ -39,7 +39,8 @@ fun! vwm#init()
     com! -nargs=+ -complete=command VwmInNormWin call vwm#do_in_normal_window(<q-args>)
     com! -nargs=* -complete=shellcmd VwmTerminal call vwm#terminal(<q-args>)
 
-    call vwm#status#hilight()
+    call vwm#ss#init()
+    call vwm#status#enable()
 endf
 
 fun! vwm#copen()

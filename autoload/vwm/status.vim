@@ -25,6 +25,7 @@ fun! vwm#status#enable()
         au WinEnter,BufWinEnter,FileType,ColorScheme * call vwm#status#update()
         au CursorMoved,BufUnload * call vwm#status#update()
     augroup END
+    call vwm#status#hilight()
 endf
 
 fun! vwm#status#disable()
