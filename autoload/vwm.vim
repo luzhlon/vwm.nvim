@@ -293,12 +293,8 @@ fun! vwm#open_bottom_panel()
             exec 'botright' g:vwm_bottom_height.'split' '+b'.bottom_bnr
         else
             exec 'botright' 'copen' g:vwm_bottom_height
+            setl bufhidden=
         endif
-        setl bufhidden=
-        if line('$') < 2
-            " cadde '==================『Bottom Panel』=================='
-        endif
-
         call vwm#make_bottom()
     endif
     sil! noau exec g:vwm_bottom_buffer 'b'

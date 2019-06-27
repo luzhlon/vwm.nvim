@@ -186,11 +186,11 @@ fun! s:load_info()
         exec 'b' data['current']
     endif
 
-    if get(data, 'bottom_panel')
-        call vwm#open_bottom_panel()
-    endif
+    " if get(data, 'bottom_panel')
+    "     call timer_start(100, {t->vwm#open_bottom_panel()})
+    " endif
     if get(data, 'left_panel')
-        call vwm#open_left_panel()
+        Defx -split=vertical -direction=topleft -search=`expand('%:p')`
     endif
 
     call timer_start(10, {t->vwm#goto_normal_window()})
