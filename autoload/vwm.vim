@@ -56,15 +56,16 @@ endif
 
 fun! vwm#terminal(...)
     let bnr = bufnr('%')
+    let cmdline = len(a:000) ? join(a:000) : get(g:, 'vwm#terminal#default', '')
     " 在Bottom Panel中切换Terminal
     call vwm#open_bottom_panel()
     " 保证处于当前buffer的上下文中
     exec bnr . 'b'
 
     if has('nvim')
-        exec 'terminal' join(a:000)
+        exec 'terminal' cmdline
     else
-        exec 'terminal' '++curwin' join(a:000)
+        exec 'terminal' '++curwin' cmdline
     endif
 
     call vwm#status#update()
