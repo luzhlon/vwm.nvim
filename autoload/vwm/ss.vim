@@ -30,6 +30,7 @@ fun! vwm#ss#load(...)
     if !empty(vwm#ss#read())
         call s:load_info()
         call vwm#ss#histadd(getcwd())
+        doautocmd User VwmSessionLoad
     endif
 endf
 
@@ -41,6 +42,7 @@ fun! vwm#ss#save()
 
     let g:vwm_session = get(g:, 'vwm_session', {})
     try
+        doautocmd User VwmSessionSave
         call s:save_info()
         call vwm#ss#write()
         call vwm#ss#histadd(getcwd())
@@ -170,6 +172,7 @@ fun! s:load_info()
     if !empty(get(data, 'title'))
         set title
         let g:titlestring = data['title']
+        " Wait GUI
         call timer_start(100, {t->execute('let &titlestring = g:titlestring')})
     endif
 
@@ -193,5 +196,5 @@ fun! s:load_info()
         Defx -split=vertical -direction=topleft -search=`expand('%:p')`
     endif
 
-    call timer_start(10, {t->vwm#goto_normal_window()})
+    call timer_start(0, {t->vwm#goto_normal_window()})
 endf

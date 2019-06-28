@@ -37,6 +37,7 @@ fun! vwm#init()
     com! -nargs=* -complete=shellcmd VwmTerminal call vwm#terminal(<q-args>)
 
     call vwm#ss#init()
+    call vwm#bm#init()
     call vwm#status#enable()
 endf
 
