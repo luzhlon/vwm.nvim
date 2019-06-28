@@ -26,6 +26,9 @@ fun! vwm#status#enable()
         au CursorMoved,BufUnload * call vwm#status#update()
     augroup END
     call vwm#status#hilight()
+    if get(g:, 'vwm#status#interval')
+        call timer_start(g:vwm#status#interval, {t->vwm#status#update()}, {'repeat': -1})
+    endif
 endf
 
 fun! vwm#status#disable()
@@ -328,6 +331,8 @@ fun! vwm#status#hilight()
     sil! hi Status1 guifg=#c2bfbc guibg=#606060
     sil! hi Status2 guifg=#c2bfbc guibg=#4e4e4e
     sil! hi Status3 guifg=#c2bfbc guibg=#444444
+    sil! hi LeftPanelNormal guibg=#252525
+    sil! hi LeftPanelCursorLine guibg=#2F3F46
 
     let nr = hlID('CursorLineNr')
     let nr_fg_g = synIDattr(nr, 'fg', 'gui')
