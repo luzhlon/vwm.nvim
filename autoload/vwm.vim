@@ -18,9 +18,6 @@ let g:vwm_bottom_filetype = extend({}, get(g:, 'vwm_bottom_filetype', {}))
 let s:lambda_mapsize = {v,fullsize->type(v)==v:t_float ? float2nr(fullsize * v): v}
 let s:lambda_mapsizes = {l,fullsize->map(copy(l), {i,v->s:lambda_mapsize(v, fullsize)})}
 
-let g:vwm_left_width = get(g:, 'vwm_left_width', s:lambda_mapsize(g:vwm_left_size[0], &columns))
-let g:vwm_bottom_height = get(g:, 'vwm_bottom_height', s:lambda_mapsize(g:vwm_bottom_size[0], &lines))
-
 fun! vwm#init()
     augroup VWM
         au WinEnter * call vwm#check_layout()
@@ -151,7 +148,8 @@ fun! vwm#check_layout()
             \ execute('botright vsplit'),
             \ execute(bnr ? bnr . 'b': 'ene'),
             \ win_gotoid(g:vwm_left_panel),
-            \ vwm#make_left({'width': w}),
+            \ nvim_set_var('g:vwm_left_width', w),
+            \ vwm#make_left(),
         \ ]})
     endif
 endf
@@ -169,28 +167,6 @@ fun! vwm#update_panel_info()
     endif
 endf
 
-" 移动一个窗口为左面板
-" fun! vwm#move_to_left(wid, bnr)
-"     let wid = a:wid
-"     let bnr = a:bnr
-"     " 延时过后 bnr还属于wid
-"     if winbufnr(wid) == bnr
-"         call win_gotoid(wid)
-"         " caddexpr 'wid: ' . wid . ' bnr: ' . bnr
-"         " Panel存在且wid不是Panel
-"         if win_id2win(g:vwm_left_panel) && wid != g:vwm_left_panel
-"             noau close
-"             call win_gotoid(g:vwm_left_panel)
-"             let g:vwm_left_width = winwidth(0)
-"             noau exec bnr 'b'
-"         else
-"             call vwm#make_left()
-"         endif
-"         call vwm#status#update()
-"     endif
-"     exec 'vertical' 'resize' g:vwm_left_width
-" endf
-
 fun! vwm#move_to_left(wid, bnr)
     let r = vwm#move_window(a:wid, a:bnr, g:vwm_left_panel)
 
@@ -201,8 +177,12 @@ fun! vwm#move_to_left(wid, bnr)
         let g:vwm_left_buffer = bufnr('%')
     endif
 
+    if exists('&winhl')
+        setl winhl=Normal:LeftPanelNormal,CursorLine:LeftPanelCursorLine
+    endif
+
     call vwm#status#update()
-    exec 'vertical' 'resize' g:vwm_left_width
+    call vwm#resize()
 endf
 
 fun! vwm#move_window(src_wid, src_buf, dst_wid)
@@ -235,7 +215,7 @@ fun! vwm#move_to_bottom(wid, bnr)
     endif
 
     call vwm#status#update()
-    exec 'resize' g:vwm_bottom_height
+    call vwm#resize()
 endf
 
 fun! s:current_belong_bottom()
@@ -252,6 +232,9 @@ fun! vwm#check_panel(...)
     let event = a:0 ? a:1 : ''
 
     if wid == g:vwm_left_panel
+        if exists('&winhl')
+            setl winhl=Normal:LeftPanelNormal,CursorLine:LeftPanelCursorLine
+        endif
         " 误入侧边栏
         if !has_key(g:vwm_left_filetype, &ft) && (event == 'BufWinEnter' || event == 'BufEnter')
             let bnr = bufnr('%')
@@ -290,9 +273,9 @@ fun! vwm#open_bottom_panel()
             endif
         endfor
         if bottom_bnr
-            exec 'botright' g:vwm_bottom_height.'split' '+b'.bottom_bnr
+            exec 'botright' '2split' '+b'.bottom_bnr
         else
-            exec 'botright' 'copen' g:vwm_bottom_height
+            exec 'botright' 'copen' 2
             setl bufhidden=
         endif
         call vwm#make_bottom()
@@ -301,24 +284,45 @@ fun! vwm#open_bottom_panel()
 endf
 
 " 将一个窗口变为左侧面板
-fun! vwm#make_left(...)
-    let opt = a:0 ? a:1 : {}
-    call assert_true(type(opt) == v:t_dict)
-
-    let wnr = get(opt, 'winnr', winnr())
+fun! vwm#make_left()
+    let wnr = winnr()
     let g:vwm_left_panel = win_getid(wnr)
 
     " 移至最左侧 移动之后wnr不再表示原来的窗口
     if wnr != 1 | winc H | endif
 
     call setwinvar(g:vwm_left_panel, 'vwm_statusline', function('vwm#status#left'))
-    if exists('&winhl')
-        call setwinvar(g:vwm_left_panel, '&winhl', 'Normal:LeftPanelNormal,CursorLine:LeftPanelCursorLine')
-    endif
 
     " caddexpr 'wid: ' . g:vwm_left_panel
     call win_gotoid(g:vwm_left_panel)
-    exec 'vertical' 'resize' get(opt, 'width', g:vwm_left_width)
+    call vwm#resize()
+endf
+
+fun! vwm#make_bottom()
+    if g:vwm_bottom_panel != win_getid()
+        winc J
+        let g:vwm_bottom_panel = win_getid()
+        let w:vwm_statusline = function('vwm#status#bottom')
+        call vwm#resize()
+        call vwm#restore_left()
+    endif
+endf
+
+fun! vwm#resize()
+    let wid = win_getid()
+    if wid == g:vwm_bottom_panel
+        if !has_key(g:, 'vwm_bottom_height')
+            let g:vwm_bottom_height = get(g:, 'vwm_bottom_height',
+                    \ s:lambda_mapsize(g:vwm_bottom_size[0], &lines))
+        endif
+        exec 'resize' g:vwm_bottom_height
+    elseif wid == g:vwm_left_panel
+        if !has_key(g:, 'vwm_left_width')
+            let g:vwm_left_width = get(g:, 'vwm_left_width',
+                    \ s:lambda_mapsize(g:vwm_left_size[0], &columns))
+        endif
+        exec 'vertical' 'resize' g:vwm_left_width
+    endif
 endf
 
 " 打开底部面板后，恢复左侧面板的位置
@@ -327,26 +331,16 @@ fun! vwm#restore_left()
     if win_gotoid(g:vwm_left_panel)
         let g:vwm_left_width = winwidth(0)
         winc H
-        exec 'vertical' 'resize' g:vwm_left_width
+        call vwm#resize()
         call win_gotoid(wid)
         redraw!
-    endif
-endf
-
-fun! vwm#make_bottom()
-    if g:vwm_bottom_panel != win_getid()
-        winc J
-        let g:vwm_bottom_panel = win_getid()
-        let w:vwm_statusline = function('vwm#status#bottom')
-        exec 'resize' g:vwm_bottom_height
-        call vwm#restore_left()
     endif
 endf
 
 fun! vwm#open_left_panel()
     if bufexists(g:vwm_left_buffer)
         if !win_gotoid(g:vwm_left_panel)
-            exec 'vertical' 'topleft' g:vwm_left_width . 'split'
+            exec 'vertical' 'topleft' '2split'
             call vwm#make_left()
         endif
         sil! noau exec g:vwm_left_buffer 'b'
