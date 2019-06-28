@@ -41,9 +41,9 @@ fun! vwm#ss#save()
 
     let g:vwm_session = get(g:, 'vwm_session', {})
     try
-        call vwm#ss#histadd(getcwd())
         call s:save_info()
         call vwm#ss#write()
+        call vwm#ss#histadd(getcwd())
     catch
         echo v:exception | call getchar()
     endt
