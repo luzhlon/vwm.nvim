@@ -20,20 +20,15 @@ let s:lambda_mapsizes = {l,fullsize->map(copy(l), {i,v->s:lambda_mapsize(v, full
 
 fun! vwm#init()
     augroup VWM
-        au WinEnter * call vwm#check_layout()
-        " au WinLeave * call vwm#check_term_exit()
-        au BufWinEnter,BufWinLeave,WinEnter,WinLeave * call vwm#update_panel_info()
-        au BufWinEnter *    call vwm#check_panel('BufWinEnter')
+        au WinEnter *       call vwm#check_layout()
+        au TermOpen *       call vwm#check_panel()
         au BufEnter *       call vwm#check_panel('BufEnter')
         au FileType *       call vwm#check_panel('FileType')
-        if has('nvim')
-            au TermOpen * call vwm#check_panel()
-        else
-            au TerminalOpen * call vwm#check_panel()
-        endif
+        au BufWinEnter *    call vwm#check_panel('BufWinEnter')
+        au BufWinEnter,BufWinLeave,WinEnter,WinLeave * call vwm#update_panel_info()
     augroup END
 
-    com! -nargs=+ -complete=command VwmInNormWin call vwm#do_in_normal_window(<q-args>)
+    com! -nargs=+ -complete=command VwmNormal call vwm#do_in_normal_window(<q-args>)
     com! -nargs=* -complete=shellcmd VwmTerminal call vwm#terminal(<q-args>)
 
     call vwm#ss#init()
@@ -46,13 +41,10 @@ fun! vwm#copen()
     call vwm#switch_to_quickfix()
 endf
 
-if has('nvim')
 fun! vwm#termopen(cmd, ...)
     ene!
     return a:0 ? termopen(a:cmd, a:1) : termopen(a:cmd)
 endf
-else
-endif
 
 fun! vwm#terminal(...)
     let bnr = bufnr('%')
@@ -132,13 +124,6 @@ fun! vwm#switch_to_quickfix()
         ene | setl nonu bt=quickfix bh=
     endif
     call vwm#status#update()
-endf
-
-fun! vwm#check_term_exit()
-    if &bt == 'terminal' && win_getid() == g:vwm_bottom_panel
-     \ && jobwait([b:terminal_job_id], 0)[0] != -1
-        call timer_start(0, {t->vwm#open_bottom_panel()})
-    endif
 endf
 
 fun! vwm#check_layout()
