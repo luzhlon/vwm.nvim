@@ -24,11 +24,12 @@ endf
 fun! vwm#ss#load(...)
     let g:vwm_ss_loaded = 1
     let dir = a:0 ? a:1 : ''
-    if len(dir)
+    if !empty(dir) && isdirectory(dir)
         exec 'cd' fnamemodify(dir, ':p')
     endif
     if !empty(vwm#ss#read())
         call s:load_info()
+        call s:local_config()
         call vwm#ss#histadd(getcwd())
         doautocmd User VwmSessionLoad
     endif
@@ -144,7 +145,6 @@ fun! s:save_info()
 
     let data.max = has('nvim') ? get(g:, 'GuiWindowMaximized') :
            \ (has('gui_running') && getwinposx() < 0 && getwinposy() < 0)
-    let data.title = &title && len(&titlestring) ? &titlestring : ''
 
     " All Buffers
     let data.buffers = map(filter(getbufinfo({'buflisted': 1}),
@@ -169,13 +169,6 @@ fun! s:load_info()
         call GuiWindowMaximized(1)
     endif
 
-    if !empty(get(data, 'title'))
-        set title
-        let g:titlestring = data['title']
-        " Wait GUI
-        call timer_start(100, {t->execute('let &titlestring = g:titlestring')})
-    endif
-
     for path in get(data, 'buffers', [])
         exec 'badd' path
     endfor
@@ -197,4 +190,11 @@ fun! s:load_info()
     endif
 
     call timer_start(0, {t->vwm#goto_normal_window()})
+endf
+
+fun! s:local_config()
+    let f = get(g:, 'vwm#ss#confdir', '.vim') . '/' . get(g:, 'vwm#ss#confile', 'settings.vim')
+    if filereadable(f)
+        exec 'so' f
+    endif
 endf
