@@ -77,19 +77,13 @@ endf
 
 fun! vwm#bm#each_sign(callback)
     let labels = get(b:, 'bookmark_labels', {})
-    let text = execute('sign place buffer=' . bufnr('%'))
-    for line in split(text, "\n")
-        " echom line
-        let m = matchlist(line, '\vline\=(\d+)\s+id\=(\d+)\s+name\=(\w+)')
-        " echom string(m)
-        if empty(m) | continue | endif
+    for item in sign_getplaced('%', {'group': 'VwmBookmark'})[0].signs
+        let lnum = item.lnum
+        let id = item.id
+        let name = item.name
 
-        let [line, id, name] = m[1:3]
-        if name !~ '^VwmBookmark' | continue | endif
-
-        let line = line + 0
         let id = id - g:vwm#bm#sign_id
-        let item = {'line': line, 'id': id, 'text': getline(line)}
+        let item = {'line': lnum, 'id': id, 'text': getline(lnum)}
         if has_key(labels, id)
             let item.label = labels[id]
         endif
@@ -119,9 +113,9 @@ endf
 
 fun! vwm#bm#place_sign(id, line, label)
     let id = a:id + g:vwm#bm#sign_id
-    exec 'sign' 'place' id 'line='.a:line
-       \ 'name='.(empty(a:label) ? 'VwmBookmark' : 'VwmBookmarkLabel')
-       \ 'buffer='.bufnr('%')
+    call sign_place(id, 'VwmBookmark',
+        \ (empty(a:label) ? 'VwmBookmark' : 'VwmBookmarkLabel'), '%',
+        \ {'lnum': a:line, 'priority': get(g:, 'vwm#bm#sign_priority', 100)})
 
     if !empty(a:label)
         if !has_key(b:, 'bookmark_labels')
@@ -133,7 +127,7 @@ endf
 
 fun! vwm#bm#unplace(id)
     let id = a:id + g:vwm#bm#sign_id
-    exec 'sign' 'unplace' id 'buffer='.bufnr('%')
+    call sign_unplace('VwmBookmark', {'buffer': '%', 'id': id})
 endf
 
 fun! vwm#bm#check(event)
