@@ -26,6 +26,8 @@ fun! vwm#init()
         au FileType *       call vwm#check_panel('FileType')
         au BufWinEnter *    call vwm#check_panel('BufWinEnter')
         au BufWinEnter,BufWinLeave,WinEnter,WinLeave * call vwm#update_panel_info()
+
+        au User VwmSessionLoad call vwm#init_tempcheck()
     augroup END
 
     com! -nargs=+ -complete=command VwmNormal call vwm#do_in_normal_window(<q-args>)
@@ -34,6 +36,33 @@ fun! vwm#init()
     call vwm#ss#init()
     call vwm#bm#init()
     call vwm#status#enable()
+endf
+
+fun! vwm#check_temp()
+    if get(b:, 'vwm_disable_temp')
+        unlet b:vwm_disable_temp
+        return
+    endif
+
+    au BufWinEnter <buffer> ++once let b:origin_bufhidden = &bh | setl bh=delete
+    au TextChanged,TextChangedI <buffer> ++once call vwm#open_this()
+
+    nn <buffer><silent><c-cr> :call vwm#open_this()<cr>
+endf
+
+fun! vwm#init_tempcheck()
+    " Remove autocmds for current buffer
+    for info in getbufinfo({'buflisted': 1})
+        call setbufvar(info.bufnr, 'vwm_disable_temp', 1)
+    endfor
+    au BufRead * call vwm#check_temp()
+endf
+
+fun! vwm#open_this()
+    let &bh = get(b:, 'origin_bufhidden', &bh)
+    sil! unmap <buffer><c-cr>
+    " redraw the tabline
+    let &tabline = &tabline
 endf
 
 fun! vwm#copen()

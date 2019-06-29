@@ -347,6 +347,9 @@ fun! vwm#status#hilight()
     call HiCopy('TabLineSelWarn', 'TabLineSel')
     exec 'hi' 'TabLineSelWarn' 'guifg='.'red' 'ctermfg='.'red'
 
+    call HiCopy('TabLineTemp', 'TabLineSel')
+    exec 'hi' 'TabLineTemp' 'gui=italic' 'cterm=italic'
+
     call HiCopy('StatusFunc', 'StatusLineNC')
     exec 'hi' 'StatusFunc' 'guifg='.'#d7875f'
 
@@ -486,8 +489,9 @@ fun! s:get_item(i, nr)
     let file = pathshorten(fnamemodify(bufname(a:nr), ':.'))
     let name = empty(file) ? '[new_' . a:nr . ']': file
     return ['%#TabLineNum# ', a:i,
-          \ is_curnr ? (modified ? ' %#TabLineSelWarn# ': ' %#TabLineSel# ')
-                      \ : (modified ? ' %#TabLineWarn#': ' %#TabLineItem#'),
+          \ is_curnr ? &bh == 'delete' ? ' %#TabLineTemp# '
+                  \ : (modified ? ' %#TabLineSelWarn# ': ' %#TabLineSel# ')
+                  \ : (modified ? ' %#TabLineWarn#': ' %#TabLineItem#'),
           \ name, is_curnr ? ' ': '']
 endf
 
