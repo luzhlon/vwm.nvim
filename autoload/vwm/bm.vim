@@ -1,5 +1,4 @@
 
-let g:vwm#bm#sign_id = 80000
 let g:vwm_bookmarks = {}
 
 " 一个buffer中的bookmark什么时候需要更新？
@@ -7,31 +6,28 @@ let g:vwm_bookmarks = {}
 "   2. buffer保存时，如果内容发生了变化，bookmark的位置也需要更新
 
 fun! vwm#bm#init()
-    sign define VwmBookmark text=⚑
-    sign define VwmBookmarkLabel text=☰
+    hi default VwmBookmarkSign guifg=#0a9dff
+    hi default VwmBookmarkLabelSign guifg=#0a9dff
+
+    call sign_define('VwmBookmark', {'text': get(g:, 'vwm#bm#bm_sign', '⚑'), 'texthl': 'VwmBookmarkSign'})
+    call sign_define('VwmBookmarkLabel', {'text': get(g:, 'vwm#bm#bm_sign', '☰'), 'texthl': 'VwmBookmarkLabelSign'})
 
     au User VwmSessionLoad call vwm#bm#load()
     au User VwmSessionSave call vwm#bm#save()
 endf
 
 fun! vwm#bm#toggle(...)
-    let l = line('.')
-    let bookmark = 0
-    fun! Callback(item) closure
-        if a:item.line != l
-            return 1
-        endif
-        let bookmark = a:item
-    endf
-    call vwm#bm#each_sign(funcref('Callback'))
+    let lnum = line('.')
+    let bookmark = sign_getplaced('%', {'group': 'VwmBookmark', 'lnum': lnum})[0].signs
+    let bookmark = len(bookmark) ? bookmark[0] : {}
 
     let label = a:0 ? a:1 == 'label' : 0
     if empty(bookmark)
         let b:bookmarks_id = get(b:, 'bookmarks_id') + 1
-        call vwm#bm#place_sign(b:bookmarks_id, l, label ? input('Bookmark Label: ') : '')
+        call vwm#bm#place_sign(b:bookmarks_id, lnum, label ? input('Bookmark Label: ') : '')
         echo 'Add' 'Bookmark' 'Success'
     else
-        call vwm#bm#unplace(bookmark.id)
+        call vwm#bm#unplace_sign(bookmark.id)
         echo 'Remove' 'Bookmark' 'Success'
     endif
 
@@ -39,6 +35,31 @@ fun! vwm#bm#toggle(...)
     else
         call vwm#bm#cache()
     endif
+endf
+
+fun! s:jump_next(d)
+    let i = 0
+    let bookmarks = vwm#bm#list_signs()
+    let bookmarks = a:d < 0 ? reverse(bookmarks) : bookmarks
+    let lnum = line('.')
+    for item in bookmarks
+        if (a:d > 0 ? item.lnum > lnum : item.lnum < lnum)
+            break
+        endif
+        let i += 1
+    endfor
+    let bookmark = get(bookmarks, i)
+    if !empty(bookmark)
+        call sign_jump(bookmark.id, 'VwmBookmark', '%')
+    endif
+endf
+
+fun! vwm#bm#jump_prev()
+    call s:jump_next(-1)
+endf
+
+fun! vwm#bm#jump_next()
+    call s:jump_next(1)
 endf
 
 fun! vwm#bm#load()
@@ -62,7 +83,7 @@ fun! vwm#bm#copen()
     let count = 0
     for [path, bookmarks] in items(g:vwm_bookmarks)
         let items = map(copy(bookmarks), {i,v->
-            \ {'filename': path, 'lnum': v.line, 'text': get(v, 'label', get(v, 'text'))}})
+            \ {'filename': path, 'lnum': v.lnum, 'text': get(v, 'label', get(v, 'text'))}})
         let count += len(items)
         call setqflist(items, 'a')
     endfor
@@ -75,35 +96,27 @@ fun! vwm#bm#curpath()
     return substitute(path, '\\', '/', 'g')
 endf
 
-fun! vwm#bm#each_sign(callback)
-    let labels = get(b:, 'bookmark_labels', {})
-    for item in sign_getplaced('%', {'group': 'VwmBookmark'})[0].signs
-        let lnum = item.lnum
-        let id = item.id
-        let name = item.name
-
-        let id = id - g:vwm#bm#sign_id
-        let item = {'line': lnum, 'id': id, 'text': getline(lnum)}
-        if has_key(labels, id)
-            let item.label = labels[id]
-        endif
-
-        if empty(a:callback(item))
-            break
-        endif
-    endfor
-endf
-
 " 列出buffer中的bookmarks
 fun! vwm#bm#list_signs()
-    let result = []
-    call vwm#bm#each_sign({item->add(result, item)})
-    return result
+    return sign_getplaced('%', {'group': 'VwmBookmark'})[0].signs
 endf
 
+fun! s:sign_to_bm(sign)
+    let s = a:sign
+    let id = s.id
+    let s.text = getline(s.lnum)
+    if has_key(b:, 'bookmark_labels') && has_key(b:bookmark_labels, id)
+        let s.label = b:bookmark_labels[id]
+    endif
+    return s
+endf
+
+" 缓存当前buffer中的书签
 fun! vwm#bm#cache()
+    if len(&bt) | return | endif
+
     let path = vwm#bm#curpath()
-    let bookmarks = vwm#bm#list_signs()
+    let bookmarks = map(vwm#bm#list_signs(), {i,v->s:sign_to_bm(v)})
     if empty(bookmarks)
         sil! call remove(g:vwm_bookmarks, path)
     else
@@ -111,11 +124,31 @@ fun! vwm#bm#cache()
     endif
 endf
 
-fun! vwm#bm#place_sign(id, line, label)
-    let id = a:id + g:vwm#bm#sign_id
+" 还原当前buffer中的书签
+fun! vwm#bm#restore()
+    let bookmarks = get(g:vwm_bookmarks, vwm#bm#curpath())
+    if empty(bookmarks) | return | endif
+
+    let b:bookmarks_id = 0
+    let b:bookmark_labels = {}
+    " place signs
+    for item in bookmarks
+        let id = item.id
+        let b:bookmarks_id = max([id, b:bookmarks_id])
+
+        let label = get(item, 'label')
+        if !empty(label)
+            let b:bookmark_labels[id] = label
+        endif
+        call vwm#bm#place_sign(id, item.lnum, label)
+    endfor
+endf
+
+fun! vwm#bm#place_sign(id, lnum, label)
+    let id = a:id
     call sign_place(id, 'VwmBookmark',
         \ (empty(a:label) ? 'VwmBookmark' : 'VwmBookmarkLabel'), '%',
-        \ {'lnum': a:line, 'priority': get(g:, 'vwm#bm#sign_priority', 100)})
+        \ {'lnum': a:lnum, 'priority': get(g:, 'vwm#bm#sign_priority', 100)})
 
     if !empty(a:label)
         if !has_key(b:, 'bookmark_labels')
@@ -125,8 +158,8 @@ fun! vwm#bm#place_sign(id, line, label)
     endif
 endf
 
-fun! vwm#bm#unplace(id)
-    let id = a:id + g:vwm#bm#sign_id
+fun! vwm#bm#unplace_sign(id)
+    let id = a:id
     call sign_unplace('VwmBookmark', {'buffer': '%', 'id': id})
 endf
 
@@ -136,28 +169,8 @@ fun! vwm#bm#check(event)
 
     let path = vwm#bm#curpath()
     if a:event == 'BufWritePost'
-        " 文件Buffer && 文件已保存
-        if empty(&bt)
-            call vwm#bm#cache()
-        endif
+        call vwm#bm#cache()
     elseif a:event == 'BufRead'
-        if has_key(bookmarks, path)
-            let bookmarks = get(g:vwm_bookmarks, vwm#bm#curpath())
-            if empty(bookmarks) | return | endif
-
-            let b:bookmarks_id = 0
-            let b:bookmark_labels = {}
-            " place signs
-            for item in bookmarks
-                let id = item.id
-                let b:bookmarks_id = max([id, b:bookmarks_id])
-
-                let label = get(item, 'label')
-                if !empty(label)
-                    let b:bookmark_labels[id] = label
-                endif
-                call vwm#bm#place_sign(id, item.line, label)
-            endfor
-        endif
+        call vwm#bm#restore()
     endif
 endf
