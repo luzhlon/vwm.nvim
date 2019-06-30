@@ -33,8 +33,8 @@ fun! vwm#init()
     com! -nargs=+ -complete=command VwmNormal call vwm#do_in_normal_window(<q-args>)
     com! -nargs=* -complete=shellcmd VwmTerminal call vwm#terminal(<q-args>)
 
-    call vwm#ss#init()
-    call vwm#bm#init()
+    if get(g:, 'vwm#use_session', 1) | call vwm#ss#init() | endif
+    if get(g:, 'vwm#use_bookmark', 1) | call vwm#bm#init() | endif
     call vwm#status#enable()
 endf
 
