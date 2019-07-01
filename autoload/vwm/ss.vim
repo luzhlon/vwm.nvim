@@ -4,8 +4,9 @@ let g:vwm_ss_histpath = g:vwm#ss#directory . '/history.txt'
 
 fun! vwm#ss#init()
     com! VwmSessionToggle call vwm#ss#toggle()
-    com! -nargs=+ -complete=dir VwmSession call vwm#ss#load(<q-args>)
-    au VimLeavePre * call vwm#ss#save()
+    com! -bang -nargs=+ -complete=dir VwmSession call vwm#ss#load(<q-args>, '<bang>' == '!')
+    com! -bang VwmSessionSave call vwm#ss#save('<bang>' == '!')
+    au VimLeavePre * call vwm#ss#save(0)
 
     if argc()
         let g:vwm_ss_disabled = 1 | return
@@ -15,19 +16,26 @@ fun! vwm#ss#init()
     if filereadable(remove_path) | return | endif
 
     if v:vim_did_enter
-        call vwm#ss#load()
+        call vwm#ss#load('.', 0)
     else
-        au VimEnter * ++nested call vwm#ss#load()
+        au VimEnter * ++nested call vwm#ss#load('.', 0)
     endif
 endf
 
-fun! vwm#ss#load(...)
-    let g:vwm_ss_loaded = 1
-    let dir = a:0 ? a:1 : ''
-    if !empty(dir) && isdirectory(dir)
-        exec 'cd' fnamemodify(dir, ':p')
+fun! vwm#ss#load(dir, force)
+    if !a:force
+        if vwm#ss#ignored(a:dir) | return | endif
     endif
+
+    if isdirectory(a:dir)
+        exec 'cd' a:dir
+    else
+        echoerr a:dir 'is not exists'
+        return
+    endif
+
     if !empty(vwm#ss#read())
+        let g:vwm_ss_loaded = 1
         call s:load_info()
         call s:local_config()
         call vwm#ss#histadd(getcwd())
@@ -35,10 +43,26 @@ fun! vwm#ss#load(...)
     endif
 endf
 
-fun! vwm#ss#save()
-    let remove_path = vwm#ss#path('_')
-    if get(g:, 'vwm_ss_disabled') || filereadable(remove_path)
-        return
+fun! vwm#ss#ignored(dir)
+    let path = substitute(a:dir, '\\', '/', 'g')
+    for ignore in get(g:, 'vwm#ss#ignore', ['~'])
+        for p in glob(ignore, 0, 1)
+            let p = substitute(p, '\\', '/', 'g')
+            if has('win32') ? p ==? path : p ==# path
+                return 1
+            endif
+        endfor
+    endfor
+endf
+
+fun! vwm#ss#save(force)
+    if !a:force
+        if vwm#ss#ignored(getcwd()) | return | endif
+
+        let remove_path = vwm#ss#path('_')
+        if get(g:, 'vwm_ss_disabled') || filereadable(remove_path)
+            return
+        endif
     endif
 
     let g:vwm_session = get(g:, 'vwm_session', {})
