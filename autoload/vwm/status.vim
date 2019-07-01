@@ -347,8 +347,11 @@ fun! vwm#status#hilight()
     call HiCopy('TabLineSelWarn', 'TabLineSel')
     exec 'hi' 'TabLineSelWarn' 'guifg='.'red' 'ctermfg='.'red'
 
-    call HiCopy('TabLineTemp', 'TabLineSel')
+    call HiCopy('TabLineTemp', 'TabLineItem')
     exec 'hi' 'TabLineTemp' 'gui=italic' 'cterm=italic'
+
+    call HiCopy('TabLineTempSel', 'TabLineSel')
+    exec 'hi' 'TabLineTempSel' 'gui=italic' 'cterm=italic'
 
     call HiCopy('StatusFunc', 'StatusLineNC')
     exec 'hi' 'StatusFunc' 'guifg='.'#d7875f'
@@ -486,11 +489,14 @@ endf
 fun! s:get_item(i, nr)
     let is_curnr = bufnr('%') == a:nr
     let modified = getbufvar(a:nr, '&mod')
+    let temp = getbufvar(a:nr, '&bh') == 'delete' && empty(getbufvar(a:nr, '&bt'))
     let file = pathshorten(fnamemodify(bufname(a:nr), ':.'))
     let name = empty(file) ? '[new_' . a:nr . ']': file
     return ['%#TabLineNum# ', a:i,
-          \ is_curnr ? &bh == 'delete' ? ' %#TabLineTemp# '
+          \ is_curnr ?
+              \ temp ? ' %#TabLineTempSel# '
                   \ : (modified ? ' %#TabLineSelWarn# ': ' %#TabLineSel# ')
+            \ : temp ? ' %#TabLineTemp#'
                   \ : (modified ? ' %#TabLineWarn#': ' %#TabLineItem#'),
           \ name, is_curnr ? ' ': '']
 endf
