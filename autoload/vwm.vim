@@ -28,7 +28,7 @@ fun! vwm#init()
         au BufWinEnter,BufWinLeave,WinEnter,WinLeave * call vwm#update_panel_info()
 
         au User VwmSessionLoad call vwm#init_tempcheck()
-        au User VwmSessionSave au! VwmCheckTemp BufRead
+        au User VwmSessionSave call vwm#uninit_tempcheck()
     augroup END
 
     com! -nargs=+ -complete=command VwmNormal call vwm#do_in_normal_window(<q-args>)
@@ -53,6 +53,12 @@ fun! vwm#check_temp()
     au TextChanged,TextChangedI <buffer> ++once call vwm#open_this()
 
     nn <buffer><silent><c-cr> :call vwm#open_this()<cr>
+endf
+
+fun! vwm#uninit_tempcheck()
+    if get(g:, 'vwm_tempcheck')
+        au! VwmCheckTemp BufRead
+    endif
 endf
 
 fun! vwm#init_tempcheck()
