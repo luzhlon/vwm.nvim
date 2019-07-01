@@ -44,6 +44,10 @@ fun! vwm#check_temp()
         unlet b:vwm_disable_temp
         return
     endif
+    if len(&bt)
+        let b:vwm_disable_temp = 1
+        return
+    endif
 
     au BufWinEnter <buffer> ++once let b:origin_bufhidden = &bh | setl bh=delete
     au TextChanged,TextChangedI <buffer> ++once call vwm#open_this()
