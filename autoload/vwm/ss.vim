@@ -27,6 +27,8 @@ fun! vwm#ss#load(dir, force)
         if vwm#ss#ignored(a:dir) | return | endif
     endif
 
+    call s:clear_session()
+
     if isdirectory(a:dir)
         exec 'cd' a:dir
     else
@@ -35,11 +37,11 @@ fun! vwm#ss#load(dir, force)
     endif
 
     if !empty(vwm#ss#read())
-        let g:vwm_ss_loaded = 1
         call s:load_info()
         call s:local_config()
         call vwm#ss#histadd(getcwd())
         doautocmd User VwmSessionLoad
+        let g:vwm_ss_loaded = 1
     endif
 endf
 
@@ -182,6 +184,17 @@ fun! s:save_info()
     endif
 
     let g:vwm_session.core_info = data
+endf
+
+fun! s:clear_session()
+    if get(g:, 'vwm_ss_loaded')
+        call vwm#ss#save(0)
+    endif
+    if win_gotoid(g:vwm_left_panel)
+        bwipe
+    endif
+    sil! windo bwipe
+    bufdo confirm bwipe
 endf
 
 fun! s:load_info()

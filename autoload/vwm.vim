@@ -28,6 +28,7 @@ fun! vwm#init()
         au BufWinEnter,BufWinLeave,WinEnter,WinLeave * call vwm#update_panel_info()
 
         au User VwmSessionLoad call vwm#init_tempcheck()
+        au User VwmSessionSave au! VwmCheckTemp BufRead
     augroup END
 
     com! -nargs=+ -complete=command VwmNormal call vwm#do_in_normal_window(<q-args>)
@@ -55,7 +56,9 @@ fun! vwm#init_tempcheck()
     for info in getbufinfo({'buflisted': 1})
         call setbufvar(info.bufnr, 'vwm_disable_temp', 1)
     endfor
-    au BufRead * call vwm#check_temp()
+    augroup VwmCheckTemp
+        au BufRead * call vwm#check_temp()
+    augroup END
 endf
 
 fun! vwm#open_this()

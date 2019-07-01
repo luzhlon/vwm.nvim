@@ -13,7 +13,7 @@ class SessionKind(Openable):
 
     def action_open(self, context):
         self._vim.vars['_'] = context['targets'][0]['word']
-        self._vim.eval('vwm#ss#load(g:_)')
+        self._vim.eval('vwm#ss#load(g:_, 0)')
 
 class Source(Base):
     def __init__(self, vim):
