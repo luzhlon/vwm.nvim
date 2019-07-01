@@ -74,8 +74,17 @@ fun! vwm#bm#load()
 endf
 
 fun! vwm#bm#save()
-    if empty(g:vwm_bookmarks) | return | endif
-    let g:vwm_session.bookmarks = g:vwm_bookmarks
+    if empty(g:vwm_bookmarks)
+        sil! unlet g:vwm_session.bookmarks
+    else
+        let g:vwm_session.bookmarks = g:vwm_bookmarks
+    endif
+endf
+
+fun! vwm#bm#clear()
+    if 1 == confirm('Clear All Bookmarks?', "&Yes\n&No\n&Cancel", 2)
+        let g:vwm_bookmarks = {}
+    endif
 endf
 
 fun! vwm#bm#copen()
