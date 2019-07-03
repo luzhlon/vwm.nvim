@@ -67,7 +67,7 @@ fun! vwm#rg#result_buffer()
         " setl fdm=manual
         setl fdm=expr fdl=2
         setl foldtext='+\ '.getline(v:foldstart)
-        setf rg_term
+        setf vwm_rg_search
 
         syntax match ModeMsg /\v^\S.*$/
         syntax match RGLineCol /\v^\s+#\S+/ contains=RgQfIdx

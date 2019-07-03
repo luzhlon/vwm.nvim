@@ -8,12 +8,15 @@ let g:vwm_bottom_buffer = -1
 let g:vwm_left_size = get(g:, 'vwm_left_size', [42, 0.3, 0.7, 1.0])
 let g:vwm_bottom_size = get(g:, 'vwm_bottom_size', [0.2, 0.5, 1.0])
 
-let g:vwm_left_filetype = extend({
-        \ 'nerdtree': 'File', 'defx': 'Defx', 'ctrlsf': 'Search',
-        \ 'vista_kind': 'Symbols', 'vista': 'Symbols',
-        \ 'vwm_symbol_': 'Symbols',
-    \}, get(g:, 'vwm_left_filetype', {}))
-let g:vwm_bottom_filetype = extend({}, get(g:, 'vwm_bottom_filetype', {}))
+let g:vwm_left_filetype = get(g:, 'vwm_left_filetype', {
+    \ 'nerdtree': 'File', 'defx': 'Defx',
+    \ 'vista_kind': 'Symbols', 'vista': 'Symbols',
+    \ 'ctrlsf': 'Search', 'vwm_rg_search': 'Search',
+    \ 'vim-plug': 'Plugs',
+\ })
+let g:vwm_bottom_filetype = get(g:, 'vwm_bottom_filetype', {})
+let g:vwm_explorer_filetype = {'nerdtree': 1, 'defx': 1}
+let g:vwm_symbol_filetype = {'vista_kind': 1, 'vista': 1}
 
 let s:lambda_mapsize = {v,fullsize->type(v)==v:t_float ? float2nr(fullsize * v): v}
 let s:lambda_mapsizes = {l,fullsize->map(copy(l), {i,v->s:lambda_mapsize(v, fullsize)})}
@@ -25,7 +28,7 @@ fun! vwm#init()
         au BufEnter *       call vwm#check_panel('BufEnter')
         au FileType *       call vwm#check_panel('FileType')
         au BufWinEnter *    call vwm#check_panel('BufWinEnter')
-        au BufWinEnter,BufWinLeave,WinEnter,WinLeave * call vwm#update_panel_info()
+        au BufWinEnter,BufWinLeave,WinLeave * call vwm#update_panel_info()
 
         au User VwmSessionLoad call vwm#init_tempcheck()
         au User VwmSessionSave call vwm#uninit_tempcheck()
@@ -134,20 +137,55 @@ fun! vwm#toggle_quickfix()
     endif
 endf
 
+fun! vwm#toggle_explorer(...)
+    let open = 1
+    if a:0
+        let open = a:1
+    elseif get(g:vwm_explorer_filetype, &ft)
+        let open = 0
+    endif
+
+    if open
+        call s:execute_or_call('vwm_open_explorer', 'Defx -split=vertical -direction=topleft')
+    else
+        close
+    endif
+endf
+
 fun! vwm#toggle_symbol(...)
     let open = 1
     if a:0
         let open = a:1
-    elseif get(g:vwm_left_filetype, &ft, '') == 'Symbols'
+    elseif get(g:vwm_symbol_filetype, &ft)
         let open = 0
     endif
 
     if open
         call vwm#open_left_panel()
         call vwm#goto_normal_window()
-        exec 'Vista'
+        call s:execute_or_call('vwm_open_symbol', 'Vista')
     else
         close
+    endif
+endf
+
+fun! s:execute_or_call(key, ...)
+    let C = get(b:, a:key)
+    if empty(C)
+        let C = get(g:, a:key)
+    endif
+    if empty(C)
+        let C = a:0 ? a:1 : 0
+    endif
+    if empty(C)
+        echoerr a:key 'is' 'not' 'exists'
+        return
+    endif
+
+    if type(C) == v:t_string
+        exec C
+    elseif type(C) == v:t_func
+        call call(C)
     endif
 endf
 
@@ -180,6 +218,8 @@ fun! vwm#check_layout()
             \ nvim_set_var('g:vwm_left_width', w),
             \ vwm#make_left(),
         \ ]})
+    elseif win_getid() == g:vwm_left_panel
+        call timer_start(0, {t->vwm#resize()})
     endif
 endf
 
@@ -341,14 +381,12 @@ fun! vwm#resize()
     let wid = win_getid()
     if wid == g:vwm_bottom_panel
         if !has_key(g:, 'vwm_bottom_height')
-            let g:vwm_bottom_height = get(g:, 'vwm_bottom_height',
-                    \ s:lambda_mapsize(g:vwm_bottom_size[0], &lines))
+            let g:vwm_bottom_height = s:lambda_mapsize(g:vwm_bottom_size[0], &lines)
         endif
         exec 'resize' g:vwm_bottom_height
     elseif wid == g:vwm_left_panel
         if !has_key(g:, 'vwm_left_width')
-            let g:vwm_left_width = get(g:, 'vwm_left_width',
-                    \ s:lambda_mapsize(g:vwm_left_size[0], &columns))
+            let g:vwm_left_width = s:lambda_mapsize(g:vwm_left_size[0], &columns)
         endif
         exec 'vertical' 'resize' g:vwm_left_width
     endif
@@ -374,7 +412,7 @@ fun! vwm#open_left_panel()
         endif
         sil! noau exec g:vwm_left_buffer 'b'
     else
-        exec 'Defx -split=vertical -direction=topleft'
+        call vwm#toggle_explorer(1)
     endif
 endf
 
