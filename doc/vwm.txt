@@ -1,0 +1,250 @@
+vwm.txt               Nvim 0.4+
+
+Version: 0.1.0
+Author:  luzhlon@outlook.com
+
+=========================================================================
+CONTENTS 						*vwm-contents*
+
+Introduction		|vwm-introduction|
+Usage			|vwm-usage|
+Interface		|vwm-interface|
+Commands		  |vwm-commands|
+Functions		  |vwm-functions|
+Variables		  |vwm-variables|
+Highlights		  |vwm-highlights|
+Configuration Examples	|vwm-examples|
+FAQ			|vwm-faq|
+Compatibility		|vwm-compatibility|
+
+==============================================================================
+INTRODUCTION					    *vwm-introduction*
+
+`vwm` is Vim's Window Manager with these features:
+- Window Management like VSCode
+- Built-in Text-Search like VSCode |vwm#rg#ui()|
+- Built-in Workspace(session) support
+- Built-in statusline/bufline support
+- Built-in Bookmark support |vwm#bm#toggle()|
+
+==============================================================================
+USAGE       					    *vwm-usage*
+
+>
+    let g:vwm#status#interval = 200
+
+    call vwm#init()
+    set showtabline=2
+    set tabline=%!vwm#status#bufs()
+>
+
+==============================================================================
+INTERFACE					    *vwm-interface*
+
+------------------------------------------------------------------------------
+COMMANDS					    *vwm-commands*
+
+:VwmNormal command                                  *:VwmNormal*
+	Execute a vim command in normal window. 
+
+:VwmTerminal shell-commandline                      *:VwmTerminal*
+	Open a terminal in bottom panel with specified commandline.
+	|vwm#terminal()|
+
+:VwmSession [directory]                             *:VwmSession*
+	Load session files for current directory or specified directory.
+
+:VwmSessionSave                                     *:VwmSessionSave*
+	Save session for current directory.
+
+:VwmSessionToggle                                   *:VwmSessionToggle*
+	Enable/Disable session support for current directory.
+
+------------------------------------------------------------------------------
+FUNCTIONS					    *vwm-functions*
+
+vwm#add_size()                                       *vwm#add_size()*
+	Add the width/height for left/bottom panel.
+	`nnoremap <m-s> :call vwm#add_size()<cr>`
+
+vwm#dec_size()                                       *vwm#dec_size()*
+	Decrease the width/height for left/bottom panel.
+	`nnoremap <m-s-s> :call vwm#dec_size()<cr>`
+
+vwm#terminal()                                       *vwm#terminal()*
+	Open a terminal in bottom panel. |g:vwm#terminal#default|
+
+vwm#toggle_terminal()                                *vwm#toggle_terminal()*
+	If current window's buffer is the terminal, close it, else call
+	|vwm#terminal()| to open a terminal, or switch to a opened terminal. 
+	`nnoremap <F4> :call vwm#toggle_terminal()<cr>` 
+
+vwm#toggle_quickfix()                                *vwm#toggle_quickfix()*
+	Same as |vwm#toggle_terminal()|. But for quickfix window.
+	`nnoremap <F3> :call vwm#toggle_quickfix()<cr>` 
+
+vwm#toggle_explorer()                                *vwm#toggle_explorer()*
+	Same as |vwm#toggle_terminal()|. But for explorer window, in left
+	panel.
+	`nnoremap <C-F2> :call vwm#toggle_explorer()<cr>` 
+
+vwm#toggle_symbol()                                  *vwm#toggle_symbol()*
+	Same as |vwm#toggle_terminal()|. But for symbol window, in left
+	panel.
+	`nnoremap <C-F3> :call vwm#toggle_symbol()<cr>` 
+
+vwm#rg#ui(text, options)                             *vwm#rg#ui()*
+	Open the text-search dialog.
+	`nnoremap <leader>w :call vwm#rg#ui(expand('<cword>'), {'word': 1})<cr>`
+
+vwm#bm#toggle(...)                                   *vwm#bm#toggle()*
+	Toggle bookmark at current line. |g:vwm_use_bookmark|
+	`nnoremap mm :call vwm#bm#toggle()<cr>`
+	`nnoremap ml :call vwm#bm#toggle('label')<cr>`
+
+
+------------------------------------------------------------------------------
+VARIABLES					    *vwm-variables*
+
+						*g:vwm_left_size*
+g:vwm_left_size
+	The size list of left panel. You can call |vwm#add_size()| to resize the
+	width of left panel.
+	A integer means absolute width, a float number means relative width
+	for 'columns'.
+
+	Type: List
+	Default: [42, 0.3, 0.7, 1.0]
+
+						*g:vwm_bottom_size*
+g:vwm_bottom_size
+	Same as |g:vwm_left_size|. You can call |vwm#add_size()| to resize the
+	height of bottom panel.
+	A integer means absolute height, a float number means relative height
+	for 'lines'.
+
+	Type: List
+	Default: [0.2, 0.5, 1.0]
+
+
+						*g:vwm_left_filetype*
+g:vwm_left_filetype
+	The filetypes left panel can contains.
+
+	Type: Dict
+	Default: >
+		\ {
+		    \ 'nerdtree': 'File', 'defx': 'Defx',
+		    \ 'vista_kind': 'Symbols', 'vista': 'Symbols',
+		    \ 'ctrlsf': 'Search', 'vwm_rg_search': 'Search',
+		    \ 'vim-plug': 'Plugs',
+		\ }
+<
+
+						*g:vwm_bottom_filetype*
+g:vwm_bottom_filetype
+	The filetypes bottom panel can contains.
+
+	Type: Dict
+	Default: {}
+
+						*g:vwm_use_bookmark*
+g:vwm_use_bookmark
+	Whether to use the built-in bookmark feature.
+	If you want to use the bookmark feature, you must enable the session
+	feature for CWD.
+
+	Type: Integer
+	Default: 1
+
+						*g:vwm#bm#bm_sign*
+g:vwm#bm#bm_sign
+	The sign character of bookmark in 'signcolumn'.
+
+	Default: '⚑'
+
+						*g:vwm#bm#bl_sign*
+	The sign character of bookmark with label in 'signcolumn'.
+
+	Default: '☰'
+
+						*g:vwm#terminal#default*
+g:vwm#terminal#default
+	The shell command to open terminal. Used by |vwm#terminal()|
+
+						*g:vwm_open_explorer*
+g:vwm_open_explorer
+	Command or function to open explorer window.
+
+	Type: String | Funcref
+	Default: 'Defx -split=vertical -direction=topleft'
+
+						*g:vwm_open_symbol*
+g:vwm_open_symbol
+	Command or function to open symbol window.
+
+	Type: String | Funcref
+	Default: 'Vista'
+
+						*g:vwm#ss#ignore*
+g:vwm#ss#ignore
+	List of ignored directories used by workspace(session) features.
+	Directories in this list will not be load/save session files.
+
+	Default: ['~']
+
+						*g:vwm#ss#confdir*
+g:vwm#ss#confdir
+	The configuration directory for current work directory(CWD).
+
+	Default: '.vim'
+
+						*g:vwm#ss#confile*
+g:vwm#ss#confile
+	The configuration vim script for current work directory.
+	`vwm.nvim` will execute next statement after load session files for
+	CWD.  >
+
+	    " Amount to `so .vim/settings.vim`
+	    exec 'so' g:vwm#ss#confdir . '/' . g:vwm#ss#confile
+<
+	Default: 'settings.vim'
+
+						*g:vwm_statusline*
+						*w:vwm_statusline*
+
+						*g:vwm#status#interval*
+g:vwm#status#interval
+	The interval for updating statusline automatically.
+	If set to 0, vwm will not update the statusline automatically. 
+
+	Default: 0
+
+						*g:vwm_ft_icon*
+						*g:vwm_default_icon*
+
+------------------------------------------------------------------------------
+HIGHLIGHTS					    *vwm-highlights*
+
+						*VwmBookmarkSign*
+VwmBookmarkSign
+	The highlight of the bookmark sign.
+
+	Default: `hi default VwmBookmarkSign guifg=#0a9dff`
+
+						*VwmBookmarkLabelSign*
+VwmBookmarkLabelSign
+	The highlight of the bookmark sign with label.
+
+	Default: `hi default VwmBookmarkLabelSign guifg=#0a9dff`
+
+==============================================================================
+EXAMPLES 					    *vwm-examples*
+
+==============================================================================
+FAQ					            *vwm-faq*
+
+==============================================================================
+COMPATIBILITY					    *vwm-compatibility*
+
+vim:tw=78:ts=8:ft=help:norl:noet:fen:
