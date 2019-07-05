@@ -409,13 +409,14 @@ endf
 
 fun! vwm#status#bottom()
     let git_state = ''
-    try
-        let git_state = gina#component#repo#branch()
-        if len(git_state)
-            let git_state = '   ' . git_state
-        endif
-    catch
-    endt
+    if exists('*FugitiveHead')
+        let git_state = FugitiveHead()
+    else
+        sil! let git_state = gina#component#repo#branch()
+    endif
+    if len(git_state)
+        let git_state = '   ' . git_state
+    endif
 
     let coc_status = coc#status()
     if len(coc_status)
