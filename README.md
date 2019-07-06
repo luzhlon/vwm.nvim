@@ -4,10 +4,10 @@
 ## Features
 
 * Window Management like VSCode
-* Built-in Text-Search like VSCode
 * Built-in Workspace(session) support
 * Built-in statusline/bufline support
 * Built-in Bookmark support
+* Built-in Text-Search like VSCode, depends [ripgrep](https://github.com/BurntSushi/ripgrep)
 
 ## ScreenShots
 
@@ -22,7 +22,7 @@ Search Dialog/Results:
 
 ## Basic&Recommended Requires
 
-* Neovim 0.4.0-982+
+* Neovim 0.4.0-982+, with `sign_xxx()` support
 * [defx.nvim](https://github.com/Shougo/defx.nvim)
 * [vista.vim](https://github.com/liuchengxu/vista.vim)
 
