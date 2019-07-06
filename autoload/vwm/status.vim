@@ -418,7 +418,7 @@ fun! vwm#status#bottom()
         let git_state = '   ' . git_state
     endif
 
-    let coc_status = coc#status()
+    let coc_status = exists('*coc#status') ? coc#status() : ''
     if len(coc_status)
         let coc_status = ' ' . coc_status . ' '
     endif
