@@ -27,7 +27,9 @@ fun! vwm#status#enable()
     augroup END
     call vwm#status#hilight()
     if get(g:, 'vwm#status#interval')
-        call timer_start(g:vwm#status#interval, {t->vwm#status#update()}, {'repeat': -1})
+        let g:vwm_status_timer = timer_start(g:vwm#status#interval, {t->vwm#status#update()}, {'repeat': -1})
+        au CmdlineEnter * call timer_pause(g:vwm_status_timer, 1)
+        au CmdlineLeave * call timer_pause(g:vwm_status_timer, 0)
     endif
 endf
 
