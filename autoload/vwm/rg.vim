@@ -1,4 +1,6 @@
 
+let s:job_started = 0
+
 fun! vwm#rg#open(pattern, opt)
     if !executable('rg')
         echoerr 'rg is not executable'
@@ -39,11 +41,13 @@ fun! vwm#rg#open(pattern, opt)
     call vwm#open_left_panel()
     call vwm#rg#result_buffer()
 
-    let s:job = jobstart(cmd, {
+    call vwm#rg#cancel()
+    let s:job_id = jobstart(cmd, {
         \ 'on_stdout': 'vwm#rg#on_data',
         \ 'on_exit': 'vwm#rg#on_exit',
         \ 'pty': 1, 'width': 1000
     \ })
+    let s:job_started = 1
 
     let g:rg_file_count = 0
     let g:rg_result_count = 0
@@ -140,10 +144,12 @@ fun! vwm#rg#on_data(j, d, e)
 endf
 
 fun! vwm#rg#on_exit(j, d, e)
+    if !s:job_started | return | endif
     let text = 'Done: ' . s:result_string() . ' Exit: ' . a:d
     call nvim_buf_set_lines(s:rg_buf, 0, 1, 0, [text])
     call vwm#goto_normal_window()
     sil! crewind
+    let s:job_started = 0
 endf
 
 fun! s:result_string()
@@ -229,5 +235,8 @@ fun! vwm#rg#build()
 endf
 
 fun! vwm#rg#cancel()
-    sil! call jobstop(s:job)
+    sil! call jobstop(s:job_id)
+    if s:job_started
+        call timer_start(100, {t->vwm#rg#on_exit(s:job_id, 'break', 'on_exit')})
+    endif
 endf
