@@ -12,7 +12,7 @@ fun! vwm#ss#init()
         let g:vwm_ss_disabled = 1 | return
     endif
 
-    let remove_path = vwm#ss#path('_')
+    let remove_path = s:get_remove_path()
     if filereadable(remove_path) | return | endif
 
     if v:vim_did_enter
@@ -61,7 +61,7 @@ fun! vwm#ss#save(force)
     if !a:force
         if vwm#ss#ignored(getcwd()) | return | endif
 
-        let remove_path = vwm#ss#path('_')
+        let remove_path = s:get_remove_path()
         if get(g:, 'vwm_ss_disabled') || filereadable(remove_path)
             return
         endif
@@ -80,7 +80,7 @@ endf
 
 fun! vwm#ss#toggle()
     let path = vwm#ss#path()
-    let remove_path = vwm#ss#path('_')
+    let remove_path = s:get_remove_path()
     if filereadable(remove_path)
         if rename(remove_path, path)
             echoerr remove_path '->' path 'FAILURE'
@@ -115,6 +115,7 @@ fun! vwm#ss#histadd(dir)
         " 移除不存在的目录
         if len(item) && !isdirectory(item)
             call remove(history_dir, i)
+            call delete(vwm#ss#path(item))
         endif
     endfor
     call insert(history_dir, dir, 0)
@@ -131,9 +132,14 @@ fun! vwm#ss#startify()
 endf
 
 fun! vwm#ss#path(...)
-    let prefix = a:0 ? a:1 : ''
-    let filename = substitute(getcwd(), '[\\\/:]', '=', 'g')
-    return g:vwm#ss#directory . '/' . prefix . filename
+    let cwd = a:0 ? a:1 : getcwd()
+    let filename = substitute(cwd, '[\\\/:]', '=', 'g')
+    return g:vwm#ss#directory . '/' . filename
+endf
+
+fun! s:get_remove_path()
+    let path = vwm#ss#path()
+    return fnamemodify(path, ':h') . '_' . fnamemodify(path, ':t')
 endf
 
 fun! vwm#ss#read()
