@@ -159,6 +159,7 @@ endf
 " 将逗号分隔的形式转换成glob语法
 fun! vwm#rg#to_glob(text)
     let t = a:text
+    let t = substitute(t, '\\', '/', 'g')
     if match(t, ',') > 0
         return '{' . t . '}'
     endif
