@@ -98,9 +98,15 @@ fun! vwm#status#goto(...)
 endf
 
 fun! vwm#status#mouse_goto(idx, double, key, pressed)
+    call vwm#goto_normal_window()
     call vwm#status#goto(a:idx)
+
     if a:key == 'r'
         call vwm#close_buffer()
+    endif
+
+    if a:key == 'l' && a:double == 2
+        call vwm#open_this()
     endif
 endf
 
