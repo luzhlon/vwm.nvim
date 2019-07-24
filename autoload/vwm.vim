@@ -161,7 +161,9 @@ fun! vwm#toggle_symbol(...)
     endif
 
     if open
+        let wid = win_getid()
         call vwm#open_left_panel()
+        call win_gotoid(wid)
         call vwm#goto_normal_window()
         call s:execute_or_call('vwm_open_symbol', 'Vista')
     else
