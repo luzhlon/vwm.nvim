@@ -78,7 +78,7 @@ endf
 fun! vwm#on_temp()
     let last_temp = get(g:, 'temp_bufnr', -1)
     if bufexists(last_temp)
-        exe 'bd' last_temp
+        sil! exe 'bd' last_temp
     endif
     let g:temp_bufnr = bufnr('%')
 endf

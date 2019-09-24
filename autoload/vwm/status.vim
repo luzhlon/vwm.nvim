@@ -500,6 +500,10 @@ fun! s:get_item(i, nr)
     let modified = getbufvar(a:nr, '&mod')
     let temp = get(g:, 'temp_bufnr') == a:nr
     let file = pathshorten(fnamemodify(bufname(a:nr), ':.'))
+    " 不显临时文件的绝对路径
+    if temp && file =~ '.:' || file =~ '/'
+        let file = '...' . fnamemodify(file, ':t')
+    endif
     let name = empty(file) ? '[new_' . a:nr . ']': file
     return ['%#TabLineNum# ', a:i,
           \ is_curnr ?
