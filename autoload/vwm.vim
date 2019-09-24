@@ -47,15 +47,16 @@ fun! vwm#check_temp()
         unlet b:vwm_disable_temp
         return
     endif
+    " 特殊buffer不检查
     if len(&bt)
         let b:vwm_disable_temp = 1
         return
     endif
 
-    au BufWinEnter <buffer> ++once let b:origin_bufhidden = &bh | setl bh=delete
-    au TextChanged,TextChangedI <buffer> ++once call vwm#open_this()
+    au BufWinEnter <buffer> ++once call vwm#on_temp()
+    au TextChanged,TextChangedI,InsertEnter <buffer> ++once call vwm#open_this()
 
-    nn <buffer><silent><c-cr> :call vwm#open_this()<cr>
+    " nn <buffer><silent><c-cr> :call vwm#open_this()<cr>
 endf
 
 fun! vwm#uninit_tempcheck()
@@ -74,10 +75,20 @@ fun! vwm#init_tempcheck()
     augroup END
 endf
 
+fun! vwm#on_temp()
+    let last_temp = get(g:, 'temp_bufnr', -1)
+    if bufexists(last_temp)
+        exe 'bd' last_temp
+    endif
+    let g:temp_bufnr = bufnr('%')
+endf
+
 fun! vwm#open_this()
-    let &bh = get(b:, 'origin_bufhidden', &bh)
-    sil! unmap <buffer><c-cr>
+    " sil! unmap <buffer><c-cr>
     " redraw the tabline
+    if bufnr('%') == get(g:, 'temp_bufnr', -1)
+        unlet g:temp_bufnr
+    endif
     let &tabline = &tabline
 endf
 

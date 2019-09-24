@@ -498,7 +498,7 @@ endf
 fun! s:get_item(i, nr)
     let is_curnr = bufnr('%') == a:nr
     let modified = getbufvar(a:nr, '&mod')
-    let temp = getbufvar(a:nr, '&bh') == 'delete' && empty(getbufvar(a:nr, '&bt'))
+    let temp = get(g:, 'temp_bufnr') == a:nr
     let file = pathshorten(fnamemodify(bufname(a:nr), ':.'))
     let name = empty(file) ? '[new_' . a:nr . ']': file
     return ['%#TabLineNum# ', a:i,
