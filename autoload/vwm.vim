@@ -10,6 +10,7 @@ let g:vwm_bottom_size = get(g:, 'vwm_bottom_size', [0.2, 0.5, 1.0])
 
 let g:vwm_left_filetype = get(g:, 'vwm_left_filetype', {
     \ 'nerdtree': 'File', 'defx': 'Defx',
+    \ 'coc-explorer': 'Explorer',
     \ 'vista_kind': 'Symbols', 'vista': 'Symbols',
     \ 'ctrlsf': 'Search', 'vwm_rg_search': 'Search',
     \ 'vim-plug': 'Plugs',
